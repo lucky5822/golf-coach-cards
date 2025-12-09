@@ -1,9 +1,7 @@
 {
-    "name": "golf-coach-cards",
+    "name": "GolfCoach Cards",
     "content_in_root": false,
-    "filename": "cards/nova-cards-bundle.js",
+    "filename": "cards/golfcoach-cards.js",
     "render_readme": true,
-    "country": ["IT", "EN", "US"],
-    "homeassistant": "2023.8.0",
-    "persistent_directory": "none"
+    "homeassistant": "2023.8.0"
 }
