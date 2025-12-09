@@ -3,5 +3,8 @@
     "content_in_root": false,
     "filename": "cards/golfcoach-cards.js",
     "render_readme": true,
-    "homeassistant": "2023.8.0"
+    "homeassistant": "2023.8.0",
+    "country": ["IT", "EN", "US"],
+    "domains": ["sensor"],
+    "iot_class": "calculated"
 }
