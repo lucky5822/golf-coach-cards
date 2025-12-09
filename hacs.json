@@ -1,0 +1,9 @@
+{
+    "name": "golf-coach-cards",
+    "content_in_root": false,
+    "filename": "cards/nova-cards-bundle.js",
+    "homeassistant": "2023.8.0",
+    "render_readme": true
+	"domains": ["sensor"],
+    "iot_class": "calculated"
+}
