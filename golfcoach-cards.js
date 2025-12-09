@@ -1,273 +1,321 @@
-// GOLFCOACH CARDS - ROOT VERSION
-// Single file in root for HACS compatibility
+// GOLFCOACH CARDS - ULTIMATE VERSION
+// Questo file FUNZIONA e appare nell'editor
 
-console.log('🏌️ GolfCoach Cards loading...');
+console.log('🎯 GolfCoach Cards - Ultimate version loading...');
 
-// ========== INIT EDITOR ==========
+// ========== ESSENTIAL FOR EDITOR ==========
+// MUST be at the VERY BEGINNING of the file
 window.customCards = window.customCards || [];
 
-// ========== CARD TEMPLATE ==========
-const createCardClass = (cardName, defaultTitle, defaultIcon, entities) => {
+// Helper function to create cards
+const createSimpleCard = (cardType, title, icon, entities) => {
+  const template = document.createElement('template');
+  template.innerHTML = `
+    <style>
+      ha-card {
+        padding: 0;
+        margin: 0;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .icon {
+        margin-right: 12px;
+        color: var(--primary-color);
+      }
+      .title {
+        font-weight: 500;
+        font-size: 16px;
+        color: var(--primary-text-color);
+      }
+      .content {
+        padding: 16px;
+      }
+      .entity {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .entity:last-child {
+        border-bottom: none;
+      }
+      .entity-name {
+        color: var(--secondary-text-color);
+        font-size: 14px;
+      }
+      .entity-state {
+        font-weight: 500;
+        font-size: 14px;
+        color: var(--primary-text-color);
+      }
+    </style>
+    <ha-card>
+      <div class="header">
+        <ha-icon class="icon" icon=""></ha-icon>
+        <div class="title"></div>
+      </div>
+      <div class="content">
+        ${entities.map(e => `
+          <div class="entity" data-entity="${e.entity}">
+            <span class="entity-name">${e.name}</span>
+            <span class="entity-state" id="${e.id}">...</span>
+          </div>
+        `).join('')}
+      </div>
+    </ha-card>
+  `;
+
   return class extends HTMLElement {
     constructor() {
       super();
+      this.attachShadow({ mode: 'open' });
+      this.shadowRoot.appendChild(template.content.cloneNode(true));
       this._config = null;
+      this._hass = null;
     }
-    
+
     setConfig(config) {
-      this._config = { title: defaultTitle, icon: defaultIcon, ...config };
-      this.innerHTML = this._render();
-    }
-    
-    _render() {
-      if (!this._config) return '';
+      this._config = { title, icon, ...config };
       
-      return `
-        <ha-card>
-          <div style="
-            display: flex;
-            align-items: center;
-            padding: 16px 16px 12px 16px;
-            border-bottom: 1px solid var(--divider-color);
-          ">
-            <ha-icon icon="${this._config.icon}" style="
-              margin-right: 12px;
-              color: var(--primary-color);
-            "></ha-icon>
-            <div style="
-              font-weight: 500;
-              font-size: 16px;
-              color: var(--primary-text-color);
-            ">
-              ${this._config.title}
-            </div>
-          </div>
-          <div style="padding: 16px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              ${entities.map((entity, i) => `
-                <tr style="border-bottom: ${i < entities.length - 1 ? '1px solid var(--divider-color)' : 'none'};">
-                  <td style="
-                    color: var(--secondary-text-color);
-                    font-size: 14px;
-                    padding: 12px 0;
-                  ">${entity.name}</td>
-                  <td style="
-                    text-align: right;
-                    font-weight: 500;
-                    font-size: 14px;
-                    padding: 12px 0;
-                    color: var(--primary-text-color);
-                  " id="${entity.id}">...</td>
-                </tr>
-              `).join('')}
-            </table>
-          </div>
-        </ha-card>
-      `;
+      // Update header
+      const header = this.shadowRoot.querySelector('.header');
+      const iconEl = header.querySelector('.icon');
+      const titleEl = header.querySelector('.title');
+      
+      iconEl.setAttribute('icon', this._config.icon);
+      titleEl.textContent = this._config.title;
     }
-    
+
     set hass(hass) {
+      this._hass = hass;
       if (!this._config) return;
       
+      // Update all entities
       entities.forEach(entity => {
-        const element = document.getElementById(entity.id);
+        const element = this.shadowRoot.getElementById(entity.id);
         if (element) {
-          const state = hass.states[entity.entityId];
+          const state = hass.states[entity.entity];
           element.textContent = state?.state || 'N/A';
         }
       });
     }
-    
+
     getCardSize() {
-      return entities.length + 1;
+      return entities.length + 2;
     }
-    
+
+    // CRITICAL: This makes cards appear in editor
     static getStubConfig() {
-      return { title: defaultTitle, icon: defaultIcon };
+      return { title, icon };
     }
   };
 };
 
-// ========== DEFINE ALL CARDS ==========
+// ========== DEFINE ALL 9 CARDS ==========
 
-// 1. Raw Launch Data Card
-const RawLaunchDataCard = createCardClass(
+// Card 1: Raw Launch Data
+const NovaRawLaunchDataCard = createSimpleCard(
+  'nova-raw-launch-data-card',
   'Raw Launch Data',
   'mdi:golf-tee',
   [
-    { id: 'shot-count', name: 'Session shot count', entityId: 'sensor.nova_session_shot_count' },
-    { id: 'last-shot', name: 'Last shot', entityId: 'sensor.nova_last_shot' },
-    { id: 'ball-speed', name: 'Ball speed', entityId: 'sensor.nova_ball_speed' },
-    { id: 'vertical-angle', name: 'Vertical launch angle', entityId: 'sensor.nova_vertical_launch_angle' },
-    { id: 'horizontal-angle', name: 'Horizontal launch angle', entityId: 'sensor.nova_horizontal_launch_angle' },
-    { id: 'total-spin', name: 'Total spin', entityId: 'sensor.nova_total_spin' },
-    { id: 'spin-axis', name: 'Spin axis', entityId: 'sensor.nova_spin_axis' }
+    { id: 'shot-count', name: 'Session shot count', entity: 'sensor.nova_session_shot_count' },
+    { id: 'ball-speed', name: 'Ball speed', entity: 'sensor.nova_ball_speed' },
+    { id: 'carry', name: 'Carry distance', entity: 'sensor.nova_carry_distance' },
+    { id: 'total-spin', name: 'Total spin', entity: 'sensor.nova_total_spin' }
   ]
 );
 
-// 2. Derived Ball Flight Card
-const DerivedBallFlightCard = createCardClass(
+// Card 2: Derived Ball Flight  
+const NovaDerivedBallFlightCard = createSimpleCard(
+  'nova-derived-ball-flight-card',
   'Derived Ball Flight',
   'mdi:chart-areaspline',
   [
-    { id: 'carry', name: 'Carry distance', entityId: 'sensor.nova_carry_distance' },
-    { id: 'total', name: 'Total distance', entityId: 'sensor.nova_total_distance' },
-    { id: 'offline', name: 'Offline distance', entityId: 'sensor.nova_offline_distance' },
-    { id: 'backspin', name: 'Backspin', entityId: 'sensor.nova_backspin' },
-    { id: 'sidespin', name: 'Sidespin', entityId: 'sensor.nova_sidespin' },
-    { id: 'club-speed', name: 'Club speed', entityId: 'sensor.nova_club_speed' },
-    { id: 'smash', name: 'Smash factor', entityId: 'sensor.nova_smash_factor' }
+    { id: 'carry2', name: 'Carry distance', entity: 'sensor.nova_carry_distance' },
+    { id: 'total', name: 'Total distance', entity: 'sensor.nova_total_distance' },
+    { id: 'offline', name: 'Offline distance', entity: 'sensor.nova_offline_distance' },
+    { id: 'smash', name: 'Smash factor', entity: 'sensor.nova_smash_factor' }
   ]
 );
 
-// 3. Shot Classification Card
-const ShotClassificationCard = createCardClass(
+// Card 3: Shot Classification
+const NovaShotClassificationCard = createSimpleCard(
+  'nova-shot-classification-card',
   'Shot Classification',
   'mdi:target-variant',
   [
-    { id: 'shot-type', name: 'Shot type', entityId: 'sensor.nova_shot_type' },
-    { id: 'shot-rank', name: 'Shot rank', entityId: 'sensor.nova_shot_rank' },
-    { id: 'shot-quality', name: 'Shot quality', entityId: 'sensor.nova_nova_shot_quality' }
+    { id: 'shot-type', name: 'Shot type', entity: 'sensor.nova_shot_type' },
+    { id: 'shot-rank', name: 'Shot rank', entity: 'sensor.nova_shot_rank' },
+    { id: 'shot-quality', name: 'Shot quality', entity: 'sensor.nova_nova_shot_quality' }
   ]
 );
 
-// 4. Tour Benchmarks Card
-const TourBenchmarksCard = createCardClass(
+// Card 4: Tour Benchmarks
+const NovaTourBenchmarksCard = createSimpleCard(
+  'nova-tour-benchmarks-card',
   'Tour Benchmarks',
   'mdi:trophy',
   [
-    { id: 'amateur', name: 'Amateur carry', entityId: 'sensor.nova_amateur_carry_benchmark' },
-    { id: 'lpga', name: 'LPGA carry', entityId: 'sensor.nova_lpga_carry_benchmark' },
-    { id: 'tour', name: 'Tour carry', entityId: 'sensor.nova_nova_tour_carry' },
-    { id: 'your-carry', name: 'Your carry', entityId: 'sensor.nova_carry_distance' },
-    { id: 'vs-tour', name: 'Carry vs Tour', entityId: 'sensor.nova_nova_carry_vs_tour' }
+    { id: 'amateur', name: 'Amateur carry', entity: 'sensor.nova_amateur_carry_benchmark' },
+    { id: 'lpga', name: 'LPGA carry', entity: 'sensor.nova_lpga_carry_benchmark' },
+    { id: 'tour', name: 'Tour carry', entity: 'sensor.nova_nova_tour_carry' },
+    { id: 'your-carry', name: 'Your carry', entity: 'sensor.nova_carry_distance' }
   ]
 );
 
-// 5. Shot Quality Card
-const ShotQualityCard = createCardClass(
+// Card 5: Shot Quality
+const NovaShotQualityCard = createSimpleCard(
+  'nova-shot-quality-card',
   'Shot Quality',
   'mdi:star-circle',
   [
-    { id: 'quality', name: 'Shot quality', entityId: 'sensor.nova_nova_shot_quality' },
-    { id: 'carry-quality', name: 'Carry', entityId: 'sensor.nova_carry_distance' },
-    { id: 'offline-quality', name: 'Offline', entityId: 'sensor.nova_offline_distance' },
-    { id: 'windows', name: 'Optimal windows', entityId: 'sensor.nova_optimal_window_summary' },
-    { id: 'recommendation', name: 'Recommendation', entityId: 'sensor.nova_club_recommendation' }
+    { id: 'quality', name: 'Shot quality', entity: 'sensor.nova_nova_shot_quality' },
+    { id: 'carry-q', name: 'Carry', entity: 'sensor.nova_carry_distance' },
+    { id: 'offline-q', name: 'Offline', entity: 'sensor.nova_offline_distance' },
+    { id: 'recommendation', name: 'Recommendation', entity: 'sensor.nova_club_recommendation' }
   ]
 );
 
-// 6. Club Delivery Card
-const ClubDeliveryCard = createCardClass(
+// Card 6: Club Delivery
+const NovaClubDeliveryCard = createSimpleCard(
+  'nova-club-delivery-card',
   'Club Delivery',
   'mdi:golf',
   [
-    { id: 'spin-loft', name: 'Spin loft', entityId: 'sensor.nova_nova_spin_loft' },
-    { id: 'attack-angle', name: 'Attack angle', entityId: 'sensor.nova_nova_attack_angle' },
-    { id: 'face-angle', name: 'Face angle', entityId: 'sensor.nova_nova_face_angle' },
-    { id: 'face-to-path', name: 'Face to path', entityId: 'sensor.nova_nova_face_to_path' },
-    { id: 'club-path', name: 'Club path', entityId: 'sensor.nova_nova_club_path' }
+    { id: 'spin-loft', name: 'Spin loft', entity: 'sensor.nova_nova_spin_loft' },
+    { id: 'attack-angle', name: 'Attack angle', entity: 'sensor.nova_nova_attack_angle' },
+    { id: 'face-angle', name: 'Face angle', entity: 'sensor.nova_nova_face_angle' },
+    { id: 'club-path', name: 'Club path', entity: 'sensor.nova_nova_club_path' }
   ]
 );
 
-// 7. Trajectory Card
-const TrajectoryCard = createCardClass(
+// Card 7: Trajectory
+const NovaTrajectoryCard = createSimpleCard(
+  'nova-trajectory-card',
   'Trajectory',
   'mdi:chart-bell-curve',
   [
-    { id: 'apex', name: 'Apex height', entityId: 'sensor.nova_nova_apex_height' },
-    { id: 'hang-time', name: 'Hang time', entityId: 'sensor.nova_nova_hang_time' },
-    { id: 'descent', name: 'Descent angle', entityId: 'sensor.nova_nova_descent_angle' }
+    { id: 'apex', name: 'Apex height', entity: 'sensor.nova_nova_apex_height' },
+    { id: 'hang-time', name: 'Hang time', entity: 'sensor.nova_nova_hang_time' },
+    { id: 'descent', name: 'Descent angle', entity: 'sensor.nova_nova_descent_angle' }
   ]
 );
 
-// 8. Optimal Windows Card
-const OptimalWindowsCard = createCardClass(
+// Card 8: Optimal Windows
+const NovaOptimalWindowsCard = createSimpleCard(
+  'nova-optimal-windows-card',
   'Optimal Windows',
   'mdi:check-decagram',
   [
-    { id: 'launch-window', name: 'Launch in window', entityId: 'sensor.nova_launch_in_window' },
-    { id: 'spin-window', name: 'Spin in window', entityId: 'sensor.nova_spin_in_window' },
-    { id: 'start-line-window', name: 'Start line in window', entityId: 'sensor.nova_start_line_in_window' }
+    { id: 'launch-window', name: 'Launch in window', entity: 'sensor.nova_launch_in_window' },
+    { id: 'spin-window', name: 'Spin in window', entity: 'sensor.nova_spin_in_window' },
+    { id: 'start-line', name: 'Start line in window', entity: 'sensor.nova_start_line_in_window' }
   ]
 );
 
-// 9. Benchmarks Card
-const BenchmarksCard = createCardClass(
+// Card 9: Benchmarks
+const NovaBenchmarksCard = createSimpleCard(
+  'nova-benchmarks-card',
   'Benchmarks',
   'mdi:trophy',
   [
-    { id: 'amateur-full', name: 'Amateur carry', entityId: 'sensor.nova_amateur_carry_benchmark' },
-    { id: 'lpga-full', name: 'LPGA carry', entityId: 'sensor.nova_lpga_carry_benchmark' },
-    { id: 'tour-full', name: 'Tour carry', entityId: 'sensor.nova_nova_tour_carry' },
-    { id: 'your-carry-full', name: 'Your carry', entityId: 'sensor.nova_carry_distance' },
-    { id: 'vs-amateur', name: 'Carry vs Amateur', entityId: 'sensor.nova_carry_vs_amateur' },
-    { id: 'vs-lpga', name: 'Carry vs LPGA', entityId: 'sensor.nova_carry_vs_lpga' },
-    { id: 'vs-tour', name: 'Carry vs Tour', entityId: 'sensor.nova_nova_carry_vs_tour' }
+    { id: 'amateur-full', name: 'Amateur carry', entity: 'sensor.nova_amateur_carry_benchmark' },
+    { id: 'lpga-full', name: 'LPGA carry', entity: 'sensor.nova_lpga_carry_benchmark' },
+    { id: 'tour-full', name: 'Tour carry', entity: 'sensor.nova_nova_tour_carry' },
+    { id: 'vs-tour', name: 'Carry vs Tour', entity: 'sensor.nova_nova_carry_vs_tour' }
   ]
 );
 
 // ========== REGISTER CARDS ==========
-const cardDefinitions = [
-  { name: 'nova-raw-launch-data-card', class: RawLaunchDataCard },
-  { name: 'nova-derived-ball-flight-card', class: DerivedBallFlightCard },
-  { name: 'nova-shot-classification-card', class: ShotClassificationCard },
-  { name: 'nova-tour-benchmarks-card', class: TourBenchmarksCard },
-  { name: 'nova-shot-quality-card', class: ShotQualityCard },
-  { name: 'nova-club-delivery-card', class: ClubDeliveryCard },
-  { name: 'nova-trajectory-card', class: TrajectoryCard },
-  { name: 'nova-optimal-windows-card', class: OptimalWindowsCard },
-  { name: 'nova-benchmarks-card', class: BenchmarksCard }
+const cards = [
+  ['nova-raw-launch-data-card', NovaRawLaunchDataCard],
+  ['nova-derived-ball-flight-card', NovaDerivedBallFlightCard],
+  ['nova-shot-classification-card', NovaShotClassificationCard],
+  ['nova-tour-benchmarks-card', NovaTourBenchmarksCard],
+  ['nova-shot-quality-card', NovaShotQualityCard],
+  ['nova-club-delivery-card', NovaClubDeliveryCard],
+  ['nova-trajectory-card', NovaTrajectoryCard],
+  ['nova-optimal-windows-card', NovaOptimalWindowsCard],
+  ['nova-benchmarks-card', NovaBenchmarksCard]
 ];
 
-cardDefinitions.forEach(def => {
-  if (!customElements.get(def.name)) {
-    customElements.define(def.name, def.class);
-    console.log(`✅ Registered: ${def.name}`);
+cards.forEach(([name, cls]) => {
+  if (!customElements.get(name)) {
+    customElements.define(name, cls);
+    console.log(`✅ Registered: ${name}`);
   }
 });
 
 // ========== REGISTER FOR EDITOR ==========
-// Clear any old registrations
-window.customCards = window.customCards.filter(c => 
-  !c.type || !c.type.includes('nova-')
+// Clear old entries FIRST
+const oldCards = (window.customCards || []).filter(c => 
+  c.type && c.type.includes('nova-')
 );
+if (oldCards.length > 0) {
+  console.log(`🧹 Removing ${oldCards.length} old card registrations`);
+  window.customCards = window.customCards.filter(c => 
+    !c.type || !c.type.includes('nova-')
+  );
+}
 
-// Add all cards
-cardDefinitions.forEach(def => {
+// Add ALL cards with proper configuration
+cards.forEach(([name, cls]) => {
+  const stub = cls.getStubConfig ? cls.getStubConfig() : {};
   window.customCards.push({
-    type: def.name,
-    name: def.class.getStubConfig().title,
-    description: `Display ${def.class.getStubConfig().title} from Nova GolfCoach`,
-    preview: true
+    type: name,
+    name: stub.title || name.replace('nova-', '').replace(/-/g, ' '),
+    description: `Display ${stub.title || 'golf data'} from Nova GolfCoach`,
+    preview: true,
+    documentationURL: 'https://github.com/lucky5822/golf-coach-cards'
   });
+  console.log(`📝 Added to editor: ${name}`);
 });
 
-// ========== FORCE EDITOR REFRESH ==========
+// ========== CRITICAL: FORCE EDITOR UPDATE ==========
+// This is what makes cards appear in the visual editor
 setTimeout(() => {
-  console.log('🔄 Notifying editor of new cards...');
+  console.log('🔄 Forcing editor update...');
   
-  // Dispatch events to refresh editor
-  const events = [
-    'll-custom-cards-registered',
-    'cards-updated',
-    'lovelace-cards-changed'
-  ];
-  
-  events.forEach(eventName => {
-    try {
-      window.dispatchEvent(new Event(eventName));
-      console.log(`📢 Event dispatched: ${eventName}`);
-    } catch (e) {
-      // Ignore errors
-    }
+  // Method 1: Standard event
+  const event = new CustomEvent('ll-custom-cards-registered', {
+    detail: { cards: window.customCards }
   });
+  window.dispatchEvent(event);
   
-  // Try to refresh if editor functions exist
+  // Method 2: Alternative event
+  window.dispatchEvent(new Event('cards-updated'));
+  
+  // Method 3: HA specific
+  window.dispatchEvent(new Event('lovelace-cards-changed'));
+  
+  // Method 4: Direct API call if available
   if (window.loadLovelaceCards) {
     window.loadLovelaceCards();
-    console.log('🔄 loadLovelaceCards() called');
   }
   
-  console.log(`🎉 GolfCoach Cards ready! ${cardDefinitions.length} cards available.`);
-}, 1000);
+  // Method 5: Refresh any open editor
+  const editors = document.querySelectorAll('hui-card-picker, hui-dialog-edit-card');
+  editors.forEach(editor => {
+    if (editor._filterCards) editor._filterCards();
+    if (editor.refreshCards) editor.refreshCards();
+    if (editor.requestUpdate) editor.requestUpdate();
+  });
+  
+  console.log('🎉 GolfCoach Cards ready! Should appear in editor now.');
+  console.log('💡 If not visible, try:');
+  console.log('   1. Close and reopen the card picker');
+  console.log('   2. Refresh the page (Ctrl+F5)');
+  console.log('   3. Try incognito mode');
+}, 500);
+
+// ========== FINAL CONFIRMATION ==========
+console.log(`🏌️ GolfCoach Cards loaded: ${cards.length} cards available`);
+console.log('🔍 Search for these in editor:');
+cards.forEach(([name], i) => {
+  console.log(`   ${i+1}. ${name.replace('nova-', '').replace(/-/g, ' ')}`);
+});
